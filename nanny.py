@@ -47,6 +47,10 @@ def main():
                 logging.info("Stuck on Submitting solution... rebooting, hangon!")
                 system("/sbin/reboot")
                 break
+            if "stratum connection error" in line.lower():
+                logging.info("Connection error... rebooting, hangon!")
+                system("/sbin/reboot")
+                break
             if "killed" in line.lower():
                 logging.info("killed... rebooting, hangon!")
                 system("/sbin/reboot")
