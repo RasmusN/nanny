@@ -18,13 +18,58 @@ from time import sleep
 import logging
 
 HOME_PATH = expanduser("~")
-logging.basicConfig(filename = "nanny.log", mode='a',  level=logging.INFO,
+logging.basicConfig(filename = join(HOMEPATH, "nanny.log"), 
+                    mode='a',  
+                    level=logging.INFO,
                     format='%(asctime)s %(message)s')
+
+TRIGGERS = ['stratum connection error',
+            'killed']
+
+EXPECTED_HASHRATE = 160000000
+
+def triggered(lines):
+    """Checks if any of the trigger words are found in any of the lines"""
+    for line in reversed(lines):
+        tl = [trigger for trigger in TRIGGERS if trigger in line.lower()]
+    
+    if tl: return tl[0]
+    else:  return False
+    
+def avg_hashrate(lines, n):
+    """Calculates the average hashrate based on the n last 
+    hashing attempts"""
+    pass
+
+def stuck(lines, limit = 3):
+    """
+    Check if the miner is stuck on submitting solution.
+    
+    returns True if the miner is stuck
+    """
+    c=0
+    for line in reversed(lines):
+            if "Solution found; Submitting ..." in line:
+                c += 1
+            if "Worker stopping" in line:
+                return False
+            #Reset counter
+            #if 3 "soulution found" is found before "worker stopping"
+            #the miner can be considered dead
+            if c > limit:
+                return True
+
+def reboot(message):
+    """Reboots the miner and logs the message"""
+    logging.info(message)
+    system("/sbin/reboot")
+
 def main():
     running = True
     #Wait for the mining software to start
     sleep(25)
     logging.info("Starting nanny...")
+    
     while running:
         logging.debug("Checking for errors...")
         try: qt_log_file = open(join(HOME_PATH, "nanny/error"), "r")
@@ -35,26 +80,20 @@ def main():
         lines = qt_log_file.readlines()
         qt_log_file.close()
         
-        c = 0
-        for line in reversed(lines):
-            if "Solution found; Submitting ..." in line:
-                c += 1
-            if "Worker stopping" in line:
-                c = 0 #Reset counter
-            #if 3 "soulution found" is found before "worker stopping"
-            #the miner can be considered dead
-            if c > 3:
-                logging.info("Stuck on Submitting solution... rebooting, hangon!")
-                system("/sbin/reboot")
-                break
-            if "stratum connection error" in line.lower():
-                logging.info("Connection error... rebooting, hangon!")
-                system("/sbin/reboot")
-                break
-            if "killed" in line.lower():
-                logging.info("killed... rebooting, hangon!")
-                system("/sbin/reboot")
-                break
+        #Check if the miner is stuck on submitting solution
+        if stuck(lines):
+            reboot("Stuck on Submitting solution... rebooting, hangon!")
+            
+        #Check other lines that should trigger a reboot
+        if triggered(lines):
+            reboot("Reboot triggered: %s" % triggered(lines))
+        
+        #Check if average hashrate is to low (maybe we've lost a gfx-card).
+        if avg_hashrate(lines, 10) < EXPECTED_HASHRATE:
+            reboot("Avg hashrate below threshold (%d), rebooting!" 
+                   % avg_hashrate(lines, 10))
+            
         sleep(15)
+
 if __name__ == "__main__":
     main()
