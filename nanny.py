@@ -64,8 +64,13 @@ def avg_hashrate(lines, n):
         if "Mining on PoWhash" in line:
             hrs = re.search("\d+ H/s", line).group(0)
             hr = int(hrs.split()[0])
+            
+            dts = re.search("\d+ s", line).group(0)
+            dt = float(dts.split()[0])
 
-            hashrates.append(hr)
+            #Smaller samples than 1.8s tend to be unstable
+            if dt > 1.8:
+                hashrates.append(hr)
 
             if len(hashrates) >= n:
                 break
@@ -126,7 +131,7 @@ def main():
         if (avg_hashrate(lines, 10) is not None and 
             avg_hashrate(lines, 10) < EXPECTED_HASHRATE):
             reboot("Avg hashrate [%.2f MH/s] below threshold [%.2f MH/s], rebooting!" 
-                   % (avg_hashrate(lines, 10)/(1024**2), EXPECTED_HASHRATE/(1024**2))
+                   % (avg_hashrate(lines, 10)/(1024**2), EXPECTED_HASHRATE/(1024**2)))
             
         sleep(15)
 
