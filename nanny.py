@@ -125,8 +125,8 @@ def main():
         #Check if average hashrate is to low (maybe we've lost a gfx-card).
         if (avg_hashrate(lines, 10) is not None and 
             avg_hashrate(lines, 10) < EXPECTED_HASHRATE):
-            reboot("Avg hashrate below threshold (%d), rebooting!" 
-                   % avg_hashrate(lines, 10))
+            reboot("Avg hashrate [%.2f MH/s] below threshold [%.2f MH/s], rebooting!" 
+                   % (avg_hashrate(lines, 10)/(1024**2), EXPECTED_HASHRATE/(1024**2))
             
         sleep(15)
 
