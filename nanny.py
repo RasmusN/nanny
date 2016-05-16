@@ -12,6 +12,7 @@ $ sudo chmod u+s /sbin/reboot
 Don't forget set this script to start-on-boot
 """
 
+import re
 from os import system
 from os.path import join
 from os.path import expanduser
