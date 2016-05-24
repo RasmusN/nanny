@@ -40,11 +40,16 @@ def disconnected(lines, sample_size = 50, trigger = 20):
     if len(lines) < sample_size:
         return False
     
-    c = 0
-    for line in reversed(lines)[sample_size]:
+    c = i = 0
+    for line in reversed(lines):
+        
+        #Break loop if i is bigger than sample size
+        if i > sample_size: break
+        
         if "Waiting for work package..." in line:
             c += 1
-            
+        i += 1
+        
     if c >= trigger:
         return True
     else: 
