@@ -30,6 +30,27 @@ TRIGGERS = ['stratum connection error',
 
 EXPECTED_HASHRATE = 160000000
 
+def disconnected(lines, sample_size = 50, trigger = 20):
+    """Checks if the server is disconnected and returns True if so.
+    This function will be triggered if the <sample_size> number of
+    lines from the bottom of lines contain more than <trigger> of
+    'Waiting for work package...'
+    
+    @rtype: bool"""
+    if len(lines) < sample_size:
+        return False
+    
+    c = 0
+    for line in reversed(lines)[sample_size]:
+        if "Waiting for work package..." in line:
+            c += 1
+            
+    if c >= trigger:
+        return True
+    else: 
+        return False
+    
+    
 def triggered(lines):
     """Checks if any of the trigger words are found in any of the lines"""
     for line in reversed(lines):
@@ -132,6 +153,9 @@ def main():
             avg_hashrate(lines, 50) < EXPECTED_HASHRATE):
             reboot("Avg hashrate [%.2f MH/s] below threshold [%.2f MH/s], rebooting!" 
                    % (avg_hashrate(lines, 50)/(1024**2), EXPECTED_HASHRATE/(1024**2)))
+        
+        if disconnected(lines):
+            reboot("Disconnected from server, rebooting...")
             
         sleep(15)
 
